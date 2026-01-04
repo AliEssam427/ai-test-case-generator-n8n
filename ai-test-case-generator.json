@@ -1,0 +1,231 @@
+{
+  "name": "ai-test-case-generator",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi there! 👋\nMy name is test. How can I assist you today?",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        -560,
+        -80
+      ],
+      "id": "04d01ac0-55fa-4c35-950f-628251d0edfb",
+      "name": "When chat message received",
+      "webhookId": "a54af8ef-af49-48d5-923c-52299fb9fb93"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "You are a professional QA Engineer.\n\nThe user will write instructions in Arabic.\n\nYour job:\n1. Understand the Arabic request.\n2. Detect how many test cases the user wants.\n3. Generate exactly that number of test cases.\n4. Write all test cases in English.\n5. Return the result as pure JSON ONLY.\n6. Do not include explanations, comments, markdown, or text outside JSON.\n\nJSON format:\n{\n  \"test_cases\": [\n    {\n      \"title\": \"string\",\n      \"steps\": \"string\",\n      \"expected_result\": \"string\"\n    }\n  ]\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        -352,
+        -96
+      ],
+      "id": "fd83310e-dcd9-4489-b5d4-299bb659d89c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        112
+      ],
+      "id": "00865d4d-0d14-4591-b590-c4deecba3ba8",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "SZhKE3smiFPuMQg4",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -352,
+        112
+      ],
+      "id": "1e223491-c575-4e15-8714-45c947b050de",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Get AI response text (different models use different keys)\nconst aiText =\n  items[0].json.output ||\n  items[0].json.text ||\n  items[0].json.message ||\n  \"\";\n\n// Extract JSON block from AI response\nconst jsonMatch = aiText.match(/\\{[\\s\\S]*\\}/);\n\nif (!jsonMatch) {\n  throw new Error(\"JSON not found in AI response\");\n}\n\n// Parse JSON\nconst data = JSON.parse(jsonMatch[0]);\n\n// Validate test_cases array\nif (!Array.isArray(data.test_cases)) {\n  throw new Error(\"test_cases is missing or not an array\");\n}\n\n// Prepare rows for Google Sheets\nreturn data.test_cases.map((tc, index) => ({\n  json: {\n    TC_ID: `TC-${index + 1}`,\n    Title: tc.title,\n    Steps: tc.steps,\n    Expected_Result: tc.expected_result\n  }\n}));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -96
+      ],
+      "id": "be98a52d-33e1-4f1f-a8eb-fc2585209971",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1bqqAKKwAKH2VFIVuiBZPQYcIE7UBPOhuIo34Ta6g6wc",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "الورقة1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1bqqAKKwAKH2VFIVuiBZPQYcIE7UBPOhuIo34Ta6g6wc/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "TC_Id": "={{$json.TC_ID}}",
+            "TC_Title": "={{$json.Title}}",
+            "Test Steps": "={{$json.Steps}}",
+            "Expected Result": "={{$json.Expected_Result}}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "TC_Id",
+              "displayName": "TC_Id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "TC_Title",
+              "displayName": "TC_Title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Test Steps",
+              "displayName": "Test Steps",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Expected Result",
+              "displayName": "Expected Result",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        -96
+      ],
+      "id": "9ba6e064-666c-428e-af9e-72b8f178b7b0",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7EBNLfdQmKTgBTkl",
+          "name": "Google Sheets account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "availableInMCP": false
+  },
+  "versionId": "7a2417b7-0310-424c-9abf-417a282962eb",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a441ed90a47b7117d01f8809303c3904c0ff5d6cf06b069b0b7beef4500845bc"
+  },
+  "id": "9mpTtPb7I6wIyh9A",
+  "tags": []
+}
